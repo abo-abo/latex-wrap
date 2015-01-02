@@ -31,50 +31,56 @@
 
 (require 'helm)
 
+(defvar latex-wrap-environments
+  '("itemize" "enumerate" "left" "center" "right" "abstract" "array"
+    "description" "displaymath" "document" "eqnarray"
+    "eqnarray*" "equation" "figure" "figure*" "filecontents" "filecontents*"
+    "flushleft" "flushright" "list" "math" "minipage"
+    "picture" "quotation" "quote" "sloppypar" "tabbing" "table"
+    "table*" "tabular" "tabular*" "thebibliography" "theindex" "titlepage")
+  "List of environments available for `latex-wrap-region'.")
+
 (defun latex-wrap-region ()
   "Wrap a LaTeX environment around the region"
   (interactive)
   (let ((env (helm :sources
-                   '((name . "LaTeX environment")
-                     (candidates . ("itemize"
-                                    "enumerate"
-                                    "left"
-                                    "center"
-                                    "right"))
+                   `((name . "LaTeX environment")
+                     (candidates . ,latex-wrap-environments)
                      (action . identity))
                    :buffer "*latex-wrap*"))
         beg end)
-    (cond ((region-active-p)
-           (setq end (region-end))
-           (goto-char (region-beginning))
-           (deactivate-mark)
-           (setq beg (move-beginning-of-line 1)))
+    (when env
+      (cond ((region-active-p)
+             (setq end (region-end))
+             (goto-char (region-beginning))
+             (deactivate-mark)
+             (setq beg (move-beginning-of-line 1)))
 
-          ((looking-back "^ *")
-           (setq beg (line-beginning-position))
-           (setq end (line-end-position)))
+            ((looking-back "^ *")
+             (setq beg (line-beginning-position))
+             (setq end (line-end-position)))
 
-          (t
-           (move-end-of-line 1)
-           (newline-and-indent)
-           (setq beg (point))
-           (setq end (point))))
-    (let ((lines (or (split-string
-                      (buffer-substring-no-properties beg end)
-                      "\n" t) '(""))))
-      (delete-region beg end)
-      (indent-for-tab-command)
-      (insert (format "\\begin{%s}" env))
-      (dolist (line lines)
-        (insert "\n"
-                (if (member env '("itemize" "enumerate"))
-                    "\\item "
-                  "")
-                line)
-        (indent-for-tab-command))
-      (insert (format "\n\\end{%s}" env))
-      (indent-for-tab-command)
-      (line-move -1)
-      (move-end-of-line 1))))
+            (t
+             (move-end-of-line 1)
+             (newline-and-indent)
+             (setq beg (point))
+             (setq end (point))))
+      (let ((lines (or (split-string
+                        (buffer-substring-no-properties beg end)
+                        "\n" t) '(""))))
+        (delete-region beg end)
+        (indent-for-tab-command)
+        (insert (format "\\begin{%s}" env))
+        (dolist (line lines)
+          (insert "\n"
+                  (if (member env '("itemize" "enumerate"))
+                      "\\item "
+                    "")
+                  line)
+          (indent-for-tab-command))
+        (insert (format "\n\\end{%s}" env))
+        (indent-for-tab-command)
+        (line-move -1)
+        (move-end-of-line 1)))))
 
 (provide 'latex-wrap)
