@@ -31,9 +31,9 @@
 
 (require 'helm)
 
-(defun latex-wrap-region (beg end)
-  "Wrap a LaTeX environment around the region from BEG to END."
-  (interactive "r")
+(defun latex-wrap-region ()
+  "Wrap a LaTeX environment around the region"
+  (interactive)
   (let ((env (helm :sources
                    '((name . "LaTeX environment")
                      (candidates . ("itemize"
@@ -43,32 +43,38 @@
                                     "right"))
                      (action . identity))
                    :buffer "*latex-wrap*"))
-        (lines (or (split-string
-                    (buffer-substring-no-properties beg end)
-                    "\n" t)
-                   '("")))
-        (indent (make-string
-                 (if (boundp 'LaTeX-indent-level)
-                     LaTeX-indent-level
-                   2) ?\ )))
-    (deactivate-mark)
-    (delete-region beg end)
-    (unless (bolp)
-      (insert "\n"))
-    (insert
-     (format "\\begin{%s}\n%s\\end{%s}"
-             env
-             (mapconcat
-              (if (member env '("itemize" "enumerate"))
-                  (lambda (x) (format "\\item %s\n" x))
-                `(lambda (x) (format ,(concat indent "%s\n") x)))
-              lines
-              "")
-             env))
-    (if (eolp)
-        (line-move -1)
-      (insert "\n")
-      (line-move -2))
-    (move-end-of-line 1)))
+        beg end)
+    (cond ((region-active-p)
+           (setq end (region-end))
+           (goto-char (region-beginning))
+           (deactivate-mark)
+           (setq beg (move-beginning-of-line 1)))
+
+          ((looking-back "^ *")
+           (setq beg (line-beginning-position))
+           (setq end (line-end-position)))
+
+          (t
+           (move-end-of-line 1)
+           (newline-and-indent)
+           (setq beg (point))
+           (setq end (point))))
+    (let ((lines (or (split-string
+                      (buffer-substring-no-properties beg end)
+                      "\n" t) '(""))))
+      (delete-region beg end)
+      (indent-for-tab-command)
+      (insert (format "\\begin{%s}" env))
+      (dolist (line lines)
+        (insert "\n"
+                (if (member env '("itemize" "enumerate"))
+                    "\\item "
+                  "")
+                line)
+        (indent-for-tab-command))
+      (insert (format "\n\\end{%s}" env))
+      (indent-for-tab-command)
+      (line-move -1)
+      (move-end-of-line 1))))
 
 (provide 'latex-wrap)
