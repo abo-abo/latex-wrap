@@ -6,7 +6,7 @@
 ;; URL: https://github.com/abo-abo/latex-wrap
 ;; Version: 0.1
 ;; Package-Requires: ((helm "1.5.3"))
-;; Keywords: lisp
+;; Keywords: latex
 
 ;; This file is not part of GNU Emacs
 
