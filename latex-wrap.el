@@ -46,7 +46,11 @@
         (lines (or (split-string
                     (buffer-substring-no-properties beg end)
                     "\n" t)
-                   '(""))))
+                   '("")))
+        (indent (make-string
+                 (if (boundp 'LaTeX-indent-level)
+                     LaTeX-indent-level
+                   2) ?\ )))
     (deactivate-mark)
     (delete-region beg end)
     (unless (bolp)
@@ -57,7 +61,7 @@
              (mapconcat
               (if (member env '("itemize" "enumerate"))
                   (lambda (x) (format "\\item %s\n" x))
-                (lambda (x) (format "%s\n" x)))
+                `(lambda (x) (format ,(concat indent "%s\n") x)))
               lines
               "")
              env))
