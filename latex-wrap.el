@@ -40,6 +40,14 @@
     "table*" "tabular" "tabular*" "thebibliography" "theindex" "titlepage")
   "List of environments available for `latex-wrap-region'.")
 
+(defun latex-wrap--try-trim (str n)
+  "Return STR without at most N leading spaces."
+  (let ((i 0))
+    (while (and (< i n)
+                (eq (aref str i) ?\ ))
+      (incf i))
+    (substring str i)))
+
 (defun latex-wrap-region ()
   "Wrap a LaTeX environment around the region"
   (interactive)
@@ -48,7 +56,7 @@
                      (candidates . ,latex-wrap-environments)
                      (action . identity))
                    :buffer "*latex-wrap*"))
-        beg end)
+        beg end col)
     (when env
       (cond ((region-active-p)
              (setq end (region-end))
@@ -70,13 +78,14 @@
                         "\n" t) '(""))))
         (delete-region beg end)
         (indent-for-tab-command)
+        (setq col (current-column))
         (insert (format "\\begin{%s}" env))
         (dolist (line lines)
           (insert "\n"
                   (if (member env '("itemize" "enumerate"))
-                      "\\item "
-                    "")
-                  line)
+                      (concat "\\item "
+                              (latex-wrap--try-trim line col))
+                    line))
           (indent-for-tab-command))
         (insert (format "\n\\end{%s}" env))
         (indent-for-tab-command)
